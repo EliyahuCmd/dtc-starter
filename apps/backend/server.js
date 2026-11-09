@@ -7,6 +7,7 @@ const path = require("path")
 
 const dir = path.join(__dirname, ".medusa", "server")
 const port = process.env.PORT || "3000"
+const host = process.env.HOST || "0.0.0.0"
 
 function run(command, cwd) {
   console.log(`[server.js] ${command}`)
@@ -44,8 +45,10 @@ if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
 }
 
 // Start Medusa and forward shutdown signals from PM2
-console.log(`[server.js] Starting Medusa on port ${port}`)
-const child = spawn("npx", ["medusa", "start", "--port", port], {
+console.log(`[server.js] Starting Medusa on ${host}:${port}`)
+// Listen on all interfaces: "localhost" can resolve to IPv6 (::1) on newer
+// Node versions, while Velocity's web server proxies to 127.0.0.1.
+const child = spawn("npx", ["medusa", "start", "--host", host, "--port", port], {
   cwd: dir,
   stdio: "inherit",
   env: process.env,
