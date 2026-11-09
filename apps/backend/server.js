@@ -1,7 +1,7 @@
 // Entry file for Cloudways Velocity (PM2 runs this file).
 // Builds Medusa if no build exists, runs database migrations,
 // then starts the built server on the port Velocity proxies to.
-const { execSync, spawn } = require("child_process")
+const { execSync, execFileSync, spawn } = require("child_process")
 const fs = require("fs")
 const path = require("path")
 
@@ -25,6 +25,22 @@ try {
 } catch (err) {
   console.error("[server.js] Startup step failed:", err.message)
   process.exit(1)
+}
+
+// Optional one-time admin user creation. Set ADMIN_EMAIL and ADMIN_PASSWORD,
+// redeploy once, then remove both variables. Failure (e.g. the user already
+// exists) is logged but does not stop the server.
+if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
+  try {
+    console.log(`[server.js] Creating admin user ${process.env.ADMIN_EMAIL}`)
+    execFileSync(
+      "npx",
+      ["medusa", "user", "-e", process.env.ADMIN_EMAIL, "-p", process.env.ADMIN_PASSWORD],
+      { cwd: dir, stdio: "inherit", env: process.env }
+    )
+  } catch (err) {
+    console.error("[server.js] Admin user not created (it may already exist):", err.message)
+  }
 }
 
 // Start Medusa and forward shutdown signals from PM2
